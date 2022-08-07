@@ -14,5 +14,6 @@ public enum PatchResult
     BackupFileNotFound = 128,
     PatchFileNotFound = 256,
     CanNotBackup = 512,
-    Failed = 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512
+    UnknownClientType = 1024,
+    Failed = 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 | 1024
 }

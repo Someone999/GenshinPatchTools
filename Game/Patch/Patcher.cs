@@ -47,15 +47,16 @@ namespace GenshinPatchTools.Game.Patch
         /// 补丁文件是否存在
         /// </summary>
         /// <returns>存在为true，否则为false</returns>
-        public bool IsPatchFileExists()
+        public PatchResult CheckPatchFiles()
         {
             if (_gameInfo.ClientType != ClientType.Ocean && _gameInfo.ClientType != ClientType.Chinese)
             {
-                return false;
+                return PatchResult.UnknownClientType;
             }
             (string metadataPath, string userAssemblyPath) tuple = GetPatchPath();
-            
-            return File.Exists(tuple.metadataPath) && File.Exists(tuple.userAssemblyPath);
+
+            bool good = File.Exists(tuple.metadataPath) && File.Exists(tuple.userAssemblyPath);
+            return good ? PatchResult.Ok : PatchResult.PatchFileNotFound;
         }
         
         /// <summary>
@@ -63,13 +64,13 @@ namespace GenshinPatchTools.Game.Patch
         /// </summary>
         /// <returns>备份成功为true，否则为false</returns>
 
-        public bool BackupFiles()
+        public PatchResult BackupFiles()
         {
             string? userAsmPath = _gameInfo.UserAssemblyPath;
             string? globalMetadataPath = _gameInfo.GlobalMetadataPath;
             if (string.IsNullOrEmpty(userAsmPath) || string.IsNullOrEmpty(globalMetadataPath))
             {
-                return false;
+                return PatchResult.GameFileNotFound;
             }
 
             try
@@ -84,24 +85,24 @@ namespace GenshinPatchTools.Game.Patch
                     File.Move(globalMetadataPath, globalMetadataPath + ".unpatched");
                 }
 
-                return true;
+                return PatchResult.Ok;
             }
             catch (Exception)
             {
                 Console.WriteLine("备份文件失败");
-                return false;
+                return PatchResult.CanNotBackup;
             }
         }
 
         private PatchResult ReplaceFiles()
         {
-            if (!IsPatchFileExists())
+            var patchFileCheckResult = CheckPatchFiles();
+            if (patchFileCheckResult.IsFailed())
             {
-                return PatchResult.PatchFileNotFound;
+                return patchFileCheckResult;
             }
-            
-            
-            
+
+
             (string globalMetadata, string userAssembly) tuple = GetPatchPath();
             string? gameGlobalMetadataPath = _gameInfo.GlobalMetadataPath;
             string? gameUserAssemblyPath = _gameInfo.UserAssemblyPath;
@@ -110,7 +111,7 @@ namespace GenshinPatchTools.Game.Patch
                 return PatchResult.GameFileNotFound;
             }
 
-            if (!BackupFiles())
+            if (BackupFiles() == PatchResult.CanNotBackup)
             {
                 return PatchResult.CanNotBackup;
             }
