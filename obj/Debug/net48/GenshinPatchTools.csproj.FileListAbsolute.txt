@@ -1,0 +1,11 @@
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\bin\Debug\net48\GenshinPatchTools.dll
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\bin\Debug\net48\GenshinPatchTools.pdb
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\bin\Debug\net48\Newtonsoft.Json.dll
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net48\GenshinPatchTools.csproj.AssemblyReference.cache
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net48\GenshinPatchTools.GeneratedMSBuildEditorConfig.editorconfig
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net48\GenshinPatchTools.AssemblyInfoInputs.cache
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net48\GenshinPatchTools.AssemblyInfo.cs
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net48\GenshinPatchTools.csproj.CoreCompileInputs.cache
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net48\GenshinPatchTools.csproj.CopyComplete
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net48\GenshinPatchTools.dll
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net48\GenshinPatchTools.pdb

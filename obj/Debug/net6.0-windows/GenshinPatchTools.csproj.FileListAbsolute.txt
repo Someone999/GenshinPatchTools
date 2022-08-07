@@ -1,0 +1,12 @@
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\bin\Debug\net6.0-windows\GenshinPatchTools.deps.json
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\bin\Debug\net6.0-windows\GenshinPatchTools.dll
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\bin\Debug\net6.0-windows\GenshinPatchTools.pdb
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net6.0-windows\GenshinPatchTools.csproj.AssemblyReference.cache
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net6.0-windows\GenshinPatchTools.GeneratedMSBuildEditorConfig.editorconfig
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net6.0-windows\GenshinPatchTools.AssemblyInfoInputs.cache
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net6.0-windows\GenshinPatchTools.AssemblyInfo.cs
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net6.0-windows\GenshinPatchTools.csproj.CoreCompileInputs.cache
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net6.0-windows\GenshinPatchTools.dll
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net6.0-windows\refint\GenshinPatchTools.dll
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net6.0-windows\GenshinPatchTools.pdb
+L:\Code\GenshinPrivateServer\GenshinPatcherTools\obj\Debug\net6.0-windows\ref\GenshinPatchTools.dll
