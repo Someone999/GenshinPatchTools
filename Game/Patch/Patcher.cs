@@ -55,8 +55,23 @@ namespace GenshinPatchTools.Game.Patch
             }
             (string metadataPath, string userAssemblyPath) tuple = GetPatchPath();
 
-            bool good = File.Exists(tuple.metadataPath) && File.Exists(tuple.userAssemblyPath);
-            return good ? PatchResult.Ok : PatchResult.PatchFileNotFound;
+            try
+            {
+                bool good = File.Exists(tuple.metadataPath) && File.Exists(tuple.userAssemblyPath);
+                return good ? PatchResult.Ok : PatchResult.PatchFileNotFound;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return PatchResult.PermissionDenied;
+            }
+            catch (IOException)
+            {
+                return PatchResult.IoError;
+            }
+            catch (Exception)
+            {
+                return PatchResult.CanNotBackup;
+            }
         }
         
         /// <summary>
@@ -79,7 +94,7 @@ namespace GenshinPatchTools.Game.Patch
                 {
                     File.Move(userAsmPath, userAsmPath + ".unpatched");
                 }
-            
+
                 if (File.Exists(userAsmPath))
                 {
                     File.Move(globalMetadataPath, globalMetadataPath + ".unpatched");
@@ -87,39 +102,59 @@ namespace GenshinPatchTools.Game.Patch
 
                 return PatchResult.Ok;
             }
+            catch (UnauthorizedAccessException)
+            {
+                return PatchResult.PermissionDenied;
+            }
+            catch (IOException)
+            {
+                return PatchResult.IoError;
+            }
             catch (Exception)
             {
-                Console.WriteLine("备份文件失败");
                 return PatchResult.CanNotBackup;
             }
         }
 
         private PatchResult ReplaceFiles()
         {
-            var patchFileCheckResult = CheckPatchFiles();
-            if (patchFileCheckResult.IsFailed())
+            try
             {
-                return patchFileCheckResult;
+                var patchFileCheckResult = CheckPatchFiles();
+                if (patchFileCheckResult.IsFailed())
+                {
+                    return patchFileCheckResult;
+                }
+                (string globalMetadata, string userAssembly) tuple = GetPatchPath();
+                string? gameGlobalMetadataPath = _gameInfo.GlobalMetadataPath;
+                string? gameUserAssemblyPath = _gameInfo.UserAssemblyPath;
+                if (string.IsNullOrEmpty(gameGlobalMetadataPath) || string.IsNullOrEmpty(gameUserAssemblyPath))
+                {
+                    return PatchResult.GameFileNotFound;
+                }
+
+                if (BackupFiles() == PatchResult.CanNotBackup)
+                {
+                    return PatchResult.CanNotBackup;
+                }
+
+                File.Move(tuple.globalMetadata, gameGlobalMetadataPath);
+                File.Move(tuple.userAssembly, gameUserAssemblyPath);
+
+                return PatchResult.Ok;
             }
-
-
-            (string globalMetadata, string userAssembly) tuple = GetPatchPath();
-            string? gameGlobalMetadataPath = _gameInfo.GlobalMetadataPath;
-            string? gameUserAssemblyPath = _gameInfo.UserAssemblyPath;
-            if (string.IsNullOrEmpty(gameGlobalMetadataPath) || string.IsNullOrEmpty(gameUserAssemblyPath))
+            catch (UnauthorizedAccessException)
             {
-                return PatchResult.GameFileNotFound;
+                return PatchResult.PermissionDenied;
             }
-
-            if (BackupFiles() == PatchResult.CanNotBackup)
+            catch (IOException)
             {
-                return PatchResult.CanNotBackup;
+                return PatchResult.IoError;
             }
-            
-            File.Move(tuple.globalMetadata, gameGlobalMetadataPath);
-            File.Move(tuple.userAssembly, gameUserAssemblyPath);
-
-            return PatchResult.Ok;
+            catch (Exception)
+            {
+                return PatchResult.UnknownError;
+            }
         }
 
         /// <summary>
@@ -128,30 +163,46 @@ namespace GenshinPatchTools.Game.Patch
         /// <returns>判断结果</returns>
         public PatchResult GetPatchState()
         {
-            (string globalMetadataPath, string userAssemblyPath) tuple = GetPatchPath();
-            
-            string? gameGlobalMetadataPath = _gameInfo.GlobalMetadataPath;
-            string? gameUserAssemblyPath = _gameInfo.UserAssemblyPath;
-            
-            if (string.IsNullOrEmpty(gameGlobalMetadataPath) || string.IsNullOrEmpty(gameUserAssemblyPath))
+            try
             {
-                return PatchResult.GameFileNotFound;
-            }
-
-            byte[] gameGlobalMetadataFileBytes = File.ReadAllBytes(gameGlobalMetadataPath);
-            byte[] gameUserAssemblyFileBytes = File.ReadAllBytes(gameUserAssemblyPath);
+                (string globalMetadataPath, string userAssemblyPath) tuple = GetPatchPath();
             
-            byte[] patchGlobalMetadataFileBytes = File.ReadAllBytes(tuple.globalMetadataPath);
-            byte[] patchUserAssemblyFileBytes = File.ReadAllBytes(tuple.userAssemblyPath);
+                string? gameGlobalMetadataPath = _gameInfo.GlobalMetadataPath;
+                string? gameUserAssemblyPath = _gameInfo.UserAssemblyPath;
+            
+                if (string.IsNullOrEmpty(gameGlobalMetadataPath) || string.IsNullOrEmpty(gameUserAssemblyPath))
+                {
+                    return PatchResult.GameFileNotFound;
+                }
 
-            var md5Calculator = MD5.Create();
+                byte[] gameGlobalMetadataFileBytes = File.ReadAllBytes(gameGlobalMetadataPath);
+                byte[] gameUserAssemblyFileBytes = File.ReadAllBytes(gameUserAssemblyPath);
+            
+                byte[] patchGlobalMetadataFileBytes = File.ReadAllBytes(tuple.globalMetadataPath);
+                byte[] patchUserAssemblyFileBytes = File.ReadAllBytes(tuple.userAssemblyPath);
 
-            string gameGlobalMetadataHash = md5Calculator.ComputeHash(gameGlobalMetadataFileBytes).GetMd5String();
-            string gameUserAssemblyFileHash = md5Calculator.ComputeHash(gameUserAssemblyFileBytes).GetMd5String();
-            string patchGlobalMetadataHash = md5Calculator.ComputeHash(patchGlobalMetadataFileBytes).GetMd5String();
-            string patchUserAssemblyFileHash = md5Calculator.ComputeHash(patchUserAssemblyFileBytes).GetMd5String();
-            bool patched = gameGlobalMetadataHash == patchGlobalMetadataHash && gameUserAssemblyFileHash == patchUserAssemblyFileHash;
-            return patched ? PatchResult.HasPatched : PatchResult.NotPatched;
+                var md5Calculator = MD5.Create();
+
+                string gameGlobalMetadataHash = md5Calculator.ComputeHash(gameGlobalMetadataFileBytes).GetMd5String();
+                string gameUserAssemblyFileHash = md5Calculator.ComputeHash(gameUserAssemblyFileBytes).GetMd5String();
+                string patchGlobalMetadataHash = md5Calculator.ComputeHash(patchGlobalMetadataFileBytes).GetMd5String();
+                string patchUserAssemblyFileHash = md5Calculator.ComputeHash(patchUserAssemblyFileBytes).GetMd5String();
+                bool patched = gameGlobalMetadataHash == patchGlobalMetadataHash && gameUserAssemblyFileHash == patchUserAssemblyFileHash;
+                return patched ? PatchResult.HasPatched : PatchResult.NotPatched;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return PatchResult.PermissionDenied;
+            }
+            catch (IOException)
+            {
+                return PatchResult.IoError;
+            }
+            catch (Exception)
+            {
+                return PatchResult.UnknownError;
+            }
+            
         }
 
         /// <summary>
@@ -199,9 +250,9 @@ namespace GenshinPatchTools.Game.Patch
                     return PatchResult.BackupFileNotFound;
                 }
 
-                if (GetPatchState() == PatchResult.NotPatched)
+                if (GetPatchState().IsFailed())
                 {
-                    return PatchResult.NotPatched;
+                    return GetPatchState();
                 }
             
                 File.Move(gameGlobalMetadataPath, gameGlobalMetadataPath + ".patched");
