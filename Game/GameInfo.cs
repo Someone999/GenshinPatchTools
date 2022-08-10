@@ -211,7 +211,7 @@ namespace GenshinPatchTools.Game
         public static GameInfo GetByGameExecutable(string gameExecutorPath)
         {
             string[] split = gameExecutorPath.Split(Path.DirectorySeparatorChar);
-            split = split.Take(split.Length - 2).ToArray();
+            split = split.Take(split.Length - 1).ToArray();
             return new GameInfo(string.Join(Path.DirectorySeparatorChar.ToString(), split));
         }
         
