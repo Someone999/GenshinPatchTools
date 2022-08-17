@@ -49,7 +49,7 @@ namespace GenshinPatchTools.Game.Patch
         /// <returns>存在为true，否则为false</returns>
         public PatchResult CheckPatchFiles()
         {
-            if (_gameInfo.ClientType != ClientType.Ocean && _gameInfo.ClientType != ClientType.Chinese)
+            if (!_gameInfo.ClientType.IsValid())
             {
                 return PatchResult.UnknownClientType;
             }
@@ -70,7 +70,7 @@ namespace GenshinPatchTools.Game.Patch
             }
             catch (Exception)
             {
-                return PatchResult.CanNotBackup;
+                return PatchResult.Failed;
             }
         }
         

@@ -7,4 +7,5 @@ namespace GenshinPatchTools.Game
         Ocean = 2,
         NotSupported = -1
     }
+
 }
