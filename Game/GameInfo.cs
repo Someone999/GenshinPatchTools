@@ -8,17 +8,16 @@ namespace GenshinPatchTools.Game
         /// <summary>
         /// 使用启动器路径创建一个GameInfo
         /// </summary>
-        /// <param name="launcherDirectory">启动器路径</param>
-        public GameInfo(string launcherDirectory)
+        /// <param name="gameDirectory">启动器路径</param>
+        public GameInfo(string gameDirectory)
         {
 
             #region 判断参数是否有效
-
-            string template = "Genshin Impact Game{0}{1}";
-            string chineseServer = string.Format(template, Path.DirectorySeparatorChar, "YuanShen_Data");
-            string oceanServer = string.Format(template, Path.DirectorySeparatorChar, "GenshinImpact_Data");
-            bool noChineseGame = !Directory.Exists(Path.Combine(launcherDirectory, chineseServer));
-            bool noOceanGame = !Directory.Exists(Path.Combine(launcherDirectory, oceanServer));
+            
+            string chineseServer = "YuanShen_Data";
+            string oceanServer = "GenshinImpact_Data";
+            bool noChineseGame = !Directory.Exists(Path.Combine(gameDirectory, chineseServer));
+            bool noOceanGame = !Directory.Exists(Path.Combine(gameDirectory, oceanServer));
             if (noChineseGame && noOceanGame)
             {
                 ExecutableFile = null;
@@ -46,20 +45,20 @@ namespace GenshinPatchTools.Game
                     break;
                 
                 case ClientType.Chinese:
-                    ExecutableFile = Path.Combine(launcherDirectory, "Genshin Impact Game", "YuanShen.exe");
-                    GlobalMetadataPath = Path.Combine(launcherDirectory, "YuanShen_Data", "Managed", "Metadata", "global-metadata.dat");
-                    UserAssemblyPath = Path.Combine(launcherDirectory, "YuanShen_Data", "Native", "UserAssembly.dll");
-                    ConfigFile = Path.Combine(launcherDirectory, "Genshin Impact Game", "config.ini");
-                    GamePath = Path.Combine(launcherDirectory, "Genshin Impact Game");
+                    ExecutableFile = Path.Combine(gameDirectory, "YuanShen.exe");
+                    GlobalMetadataPath = Path.Combine(gameDirectory, "YuanShen_Data", "Managed", "Metadata", "global-metadata.dat");
+                    UserAssemblyPath = Path.Combine(gameDirectory, "YuanShen_Data", "Native", "UserAssembly.dll");
+                    ConfigFile = null;
+                    GamePath = Path.Combine(gameDirectory);
                     IsValid = true;
                     break;
                 
                 case ClientType.Ocean:
-                    ExecutableFile = Path.Combine(launcherDirectory, "Genshin Impact Game", "GenshinImpact.exe");
-                    GlobalMetadataPath = Path.Combine(launcherDirectory, "GenshinImpact_Data", "Managed", "Metadata", "global-metadata.dat");
-                    UserAssemblyPath = Path.Combine(launcherDirectory, "GenshinImpact_Data", "Native", "UserAssembly.dll");
+                    ExecutableFile = Path.Combine(gameDirectory, "GenshinImpact.exe");
+                    GlobalMetadataPath = Path.Combine(gameDirectory, "GenshinImpact_Data", "Managed", "Metadata", "global-metadata.dat");
+                    UserAssemblyPath = Path.Combine(gameDirectory, "Native", "UserAssembly.dll");
                     ConfigFile = null;
-                    GamePath = Path.Combine(launcherDirectory, "Genshin Impact Game");
+                    GamePath = Path.Combine(gameDirectory);
                     IsValid = true;
                     break;
                 
@@ -76,18 +75,18 @@ namespace GenshinPatchTools.Game
                     throw new ArgumentOutOfRangeException();
             }
             
-            //此处的赋值是正确的
-            if (!(HasConfig = ConfigFile != null))
+            string exceptedConfigFile = Path.Combine(gameDirectory, "config.ini");
+            if (File.Exists(exceptedConfigFile))
             {
-                Config = null;
-                return;
+                Config = new IniConfig(ConfigFile!);
+                HasConfig = true;
             }
+
             
-            Config = new IniConfig(ConfigFile!);
-            _launcherDir = launcherDirectory;
+            _gameDir = gameDirectory;
             
             
-            if (Directory.Exists(ExecutableFile) || ClientType == ClientType.NotSupported || ClientType == ClientType.None)
+            if (File.Exists(ExecutableFile) && ClientType != ClientType.NotSupported && ClientType != ClientType.None)
             {
                 return;
             }
@@ -98,7 +97,19 @@ namespace GenshinPatchTools.Game
 
             #region 尝试使用启动器的配置搜索游戏路径
 
-             LauncherInfo launcherInfo = GetLauncherInfo();
+            LauncherInfo launcherInfo = GetLauncherInfo();
+            if (!launcherInfo.IsValid || launcherInfo.Config == null || launcherInfo.Config.ContainsKey("General"))
+            {
+                IsValid = false;
+                ClientType = ClientType.NotSupported;
+                ExecutableFile = null;
+                ConfigFile = null;
+                GlobalMetadataPath = null;
+                UserAssemblyPath = null;
+                GamePath = null;
+                return;
+            }
+
             var gamePath = launcherInfo.Config["General"]["game_install_path"].GetValue<string>();
             if (gamePath == null)
             {
@@ -119,7 +130,7 @@ namespace GenshinPatchTools.Game
                     ExecutableFile = Path.Combine(gamePath, "YuanShen.exe");
                     GlobalMetadataPath = Path.Combine(gamePath, "YuanShen_Data", "Managed", "Metadata", "global-metadata.dat");
                     UserAssemblyPath = Path.Combine(gamePath, "YuanShen_Data", "Native", "UserAssembly.dll");
-                    ConfigFile = Path.Combine(gamePath, "Genshin Impact Game", "config.ini");
+                    ConfigFile = null;
                     IsValid = true;
                     break;
                 
@@ -142,20 +153,21 @@ namespace GenshinPatchTools.Game
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            HasConfig = ConfigFile != null;
-            if (HasConfig)
+            
+            exceptedConfigFile = Path.Combine(gameDirectory, "config.ini");
+            if (!File.Exists(exceptedConfigFile))
             {
                 return;
             }
-            Config = null;
-            
+            Config = new IniConfig(ConfigFile!);
+            HasConfig = true;
             #endregion
             
            
             
         }
 
-        private readonly string? _launcherDir;
+        private readonly string? _gameDir;
         
         /// <summary>
         /// 是否获取到了一个有效的游戏路径
@@ -219,7 +231,7 @@ namespace GenshinPatchTools.Game
         /// 根据启动器路径获取<see cref="LauncherInfo"/>
         /// </summary>
         /// <returns>得到的<see cref="LauncherInfo"/></returns>
-        public LauncherInfo GetLauncherInfo() => new LauncherInfo(_launcherDir ?? "");
+        public LauncherInfo GetLauncherInfo() => new LauncherInfo(_gameDir ?? "");
 
     }
 }

@@ -28,8 +28,8 @@ namespace GenshinPatchTools.Game.Patch
         /// <returns>一个元组，第一个元素是global-metadata.dat的路径，第二个元素是UserAssembly.dll的路径</returns>
         public (string, string) GetPatchPath()
         {
-            string metadataPathFormat = Path.Combine(_patchFolder, "Genshin Impact Game{0}{1}_Data{0}Managed{0}Metadata{0}{2}");
-            string userAssemblyFormat = Path.Combine(_patchFolder, "Genshin Impact Game{0}{1}_Data{0}Native{0}{2}");
+            string metadataPathFormat = Path.Combine(_patchFolder, "{1}_Data{0}Managed{0}Metadata{0}{2}");
+            string userAssemblyFormat = Path.Combine(_patchFolder, "{1}_Data{0}Native{0}{2}");
             string? clientStr = _gameInfo.ClientType switch
             {
                 ClientType.Chinese => "YuanShen",
@@ -57,7 +57,7 @@ namespace GenshinPatchTools.Game.Patch
 
             try
             {
-                bool good = File.Exists(tuple.metadataPath) && File.Exists(tuple.userAssemblyPath);
+                bool good = File.Exists(tuple.metadataPath) || File.Exists(tuple.userAssemblyPath);
                 return good ? PatchResult.Ok : PatchResult.PatchFileNotFound;
             }
             catch (UnauthorizedAccessException)
@@ -95,7 +95,7 @@ namespace GenshinPatchTools.Game.Patch
                     File.Move(userAsmPath, userAsmPath + ".unpatched");
                 }
 
-                if (File.Exists(userAsmPath))
+                if (File.Exists(globalMetadataPath))
                 {
                     File.Move(globalMetadataPath, globalMetadataPath + ".unpatched");
                 }
@@ -138,9 +138,16 @@ namespace GenshinPatchTools.Game.Patch
                     return PatchResult.CanNotBackup;
                 }
 
-                File.Move(tuple.globalMetadata, gameGlobalMetadataPath);
-                File.Move(tuple.userAssembly, gameUserAssemblyPath);
+                if (File.Exists(tuple.globalMetadata))
+                {
+                    File.Copy(tuple.globalMetadata, gameGlobalMetadataPath);
+                }
 
+                if (File.Exists(tuple.userAssembly))
+                {
+                    File.Copy(tuple.userAssembly, gameUserAssemblyPath);
+                }
+                
                 return PatchResult.Ok;
             }
             catch (UnauthorizedAccessException)
@@ -175,19 +182,33 @@ namespace GenshinPatchTools.Game.Patch
                     return PatchResult.GameFileNotFound;
                 }
 
-                byte[] gameGlobalMetadataFileBytes = File.ReadAllBytes(gameGlobalMetadataPath);
-                byte[] gameUserAssemblyFileBytes = File.ReadAllBytes(gameUserAssemblyPath);
-            
-                byte[] patchGlobalMetadataFileBytes = File.ReadAllBytes(tuple.globalMetadataPath);
-                byte[] patchUserAssemblyFileBytes = File.ReadAllBytes(tuple.userAssemblyPath);
-
+                bool metadataMatched = false, userAsmMatched = false;
+                bool metadataExists = false, userAsmExists = false;
                 var md5Calculator = MD5.Create();
+                if (File.Exists(tuple.globalMetadataPath))
+                {
+                    metadataExists = true;
+                    byte[] gameGlobalMetadataFileBytes = File.ReadAllBytes(gameGlobalMetadataPath);
+                    byte[] patchGlobalMetadataFileBytes = File.ReadAllBytes(tuple.globalMetadataPath);
+                    string gameGlobalMetadataHash = md5Calculator.ComputeHash(gameGlobalMetadataFileBytes).GetMd5String();
+                    string patchGlobalMetadataHash = md5Calculator.ComputeHash(patchGlobalMetadataFileBytes).GetMd5String();
+                    metadataMatched = gameGlobalMetadataHash == patchGlobalMetadataHash;
+                }
+                
+                if (File.Exists(tuple.userAssemblyPath))
+                {
+                    userAsmExists = true;
+                    byte[] gameUserAssemblyFileBytes = File.ReadAllBytes(gameUserAssemblyPath);
+                    byte[] patchUserAssemblyFileBytes = File.ReadAllBytes(tuple.userAssemblyPath);
+                    string gameUserAssemblyFileHash = md5Calculator.ComputeHash(gameUserAssemblyFileBytes).GetMd5String();
+                    string patchUserAssemblyFileHash = md5Calculator.ComputeHash(patchUserAssemblyFileBytes).GetMd5String();
+                    userAsmMatched = gameUserAssemblyFileHash == patchUserAssemblyFileHash;
 
-                string gameGlobalMetadataHash = md5Calculator.ComputeHash(gameGlobalMetadataFileBytes).GetMd5String();
-                string gameUserAssemblyFileHash = md5Calculator.ComputeHash(gameUserAssemblyFileBytes).GetMd5String();
-                string patchGlobalMetadataHash = md5Calculator.ComputeHash(patchGlobalMetadataFileBytes).GetMd5String();
-                string patchUserAssemblyFileHash = md5Calculator.ComputeHash(patchUserAssemblyFileBytes).GetMd5String();
-                bool patched = gameGlobalMetadataHash == patchGlobalMetadataHash && gameUserAssemblyFileHash == patchUserAssemblyFileHash;
+                }
+
+                metadataMatched = !metadataExists || metadataMatched;
+                userAsmMatched = !userAsmExists || userAsmMatched;
+                bool patched = metadataMatched && userAsmMatched;
                 return patched ? PatchResult.HasPatched : PatchResult.NotPatched;
             }
             catch (UnauthorizedAccessException)

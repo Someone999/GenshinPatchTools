@@ -22,6 +22,8 @@ namespace GenshinPatchTools.Launcher
             {
                 ExecutableFile = null;
                 ConfigFile = null;
+                Config = null;
+                return;
             }
 
             ExecutableFile = Path.Combine(launcherDirectory, "launcher.exe");
@@ -47,7 +49,7 @@ namespace GenshinPatchTools.Launcher
         /// <summary>
         /// 启动器的配置
         /// </summary>
-        public IConfigElement Config { get; }
+        public IConfigElement? Config { get; }
         
         /// <summary>
         /// 通过游戏的可执行文件创建一个LauncherInfo
@@ -66,9 +68,23 @@ namespace GenshinPatchTools.Launcher
         /// 使用启动器目录创建一个<see cref="GameInfo"/>
         /// </summary>
         /// <returns>如果读取到了有效的启动器，则为GameInfo，否则为null</returns>
-        public GameInfo? GetGameInfo() => ExecutableFile == null
-            ? null
-            : new GameInfo(Path.GetDirectoryName(ExecutableFile) ?? "");
+        public GameInfo? GetGameInfo()
+        {
+            if (ConfigFile != null && Config != null && Config.ContainsKey("General"))
+            {
+                string? gamePath0 = Config["General"]["game_install_path"].GetValue<string>();
+                return string.IsNullOrEmpty(gamePath0)
+                    ? null
+                    : new GameInfo(gamePath0!);
+            }
+            
+            if (ExecutableFile == null)
+            {
+                return null;
+            }
+            var path = Path.Combine(Path.GetDirectoryName(ExecutableFile) ?? ".\\", "Genshin Impact Game");
+            return new GameInfo(path);
 
+        }
     }
 }
