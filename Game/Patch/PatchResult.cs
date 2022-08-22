@@ -1,5 +1,8 @@
 ﻿namespace GenshinPatchTools.Game.Patch;
 
+/// <summary>
+/// 补丁状态
+/// </summary>
 [Flags]
 public enum PatchResult
 {

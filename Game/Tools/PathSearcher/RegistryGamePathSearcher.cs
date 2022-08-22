@@ -54,7 +54,7 @@ namespace GenshinPatchTools.Game.Tools.PathSearcher
             string path = GetLauncherPath();
             return Directory.Exists(path)
                 ? new[] {new LauncherInfo(path)}
-                : new LauncherInfo[0];
+                : Array.Empty<LauncherInfo>();
         }
     }
 }
