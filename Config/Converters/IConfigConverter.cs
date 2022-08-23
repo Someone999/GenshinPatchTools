@@ -1,7 +1,13 @@
 namespace GenshinPatchTools.Config.Converters
 {
-    public interface IConfigConverter<T>
+    
+    public interface IConfigConverter
     {
-        T Convert(object obj);
+        object Convert(object obj);
+    }
+    
+    public interface IConfigConverter<out T> : IConfigConverter
+    {
+        new T Convert(object obj);
     }
 }
